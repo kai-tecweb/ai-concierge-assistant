@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1440" />
+<title>AI Concierge — 社内業務アシスタント</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --indigo:#3B4FD8;
+    --indigo-600:#3242C2;
+    --indigo-50:#EEF0FE;
+    --indigo-100:#E2E6FC;
+    --indigo-tint:#F5F6FF;
+    --ink:#0F1115;
+    --ink-2:#1F2330;
+    --text:#2A2F3A;
+    --text-2:#5B6271;
+    --text-3:#8A92A3;
+    --line:#E7E9EE;
+    --line-2:#EFF1F5;
+    --bg:#FAFBFC;
+    --white:#FFFFFF;
+    --green:#1BB66A;
+    --amber:#E1A100;
+    --radius:10px;
+    --radius-lg:14px;
+    --shadow-sm:0 1px 2px rgba(15,17,21,.04), 0 1px 0 rgba(15,17,21,.02);
+    --shadow-md:0 4px 14px rgba(15,17,21,.06), 0 1px 2px rgba(15,17,21,.04);
+    --shadow-lg:0 18px 40px -12px rgba(31,35,48,.18), 0 6px 14px -6px rgba(31,35,48,.08);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);}
+  body{
+    font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI",system-ui,sans-serif;
+    font-feature-settings:"palt" 1, "pkna" 1;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    font-size:14px;
+    line-height:1.6;
+    letter-spacing:.01em;
+    min-width:1280px;
+  }
+  button{font-family:inherit;color:inherit;}
+
+  /* ===== HEADER ===== */
+  .app-header{
+    height:52px;
+    background:var(--white);
+    border-bottom:1px solid var(--line);
+    display:flex;align-items:center;
+    padding:0 20px;
+    gap:18px;
+    position:sticky;top:0;z-index:10;
+  }
+  .brand{display:flex;align-items:center;gap:9px;}
+  .brand-mark{
+    width:26px;height:26px;border-radius:7px;
+    background:linear-gradient(135deg,var(--indigo) 0%,#5B6BE8 100%);
+    display:grid;place-items:center;
+    box-shadow:0 4px 10px -3px rgba(59,79,216,.45), inset 0 1px 0 rgba(255,255,255,.25);
+    position:relative;
+  }
+  .brand-mark svg{display:block}
+  .brand-name{font-weight:600;font-size:14.5px;color:var(--ink);letter-spacing:.02em}
+  .brand-sep{width:1px;height:18px;background:var(--line);margin:0 4px}
+  .brand-feature{
+    font-size:13px;color:var(--text-2);font-weight:500;
+    display:flex;align-items:center;gap:6px;
+  }
+  .brand-feature .chev{color:var(--text-3)}
+  .brand-feature .cur{color:var(--ink);font-weight:600}
+
+  .nav{display:flex;gap:2px;margin-left:18px}
+  .nav a{
+    text-decoration:none;color:var(--text-2);font-size:13px;font-weight:500;
+    padding:7px 11px;border-radius:7px;
+    display:flex;align-items:center;gap:6px;
+    transition:background .15s, color .15s;
+  }
+  .nav a:hover{background:var(--line-2);color:var(--ink)}
+  .nav a.active{color:var(--ink);background:var(--line-2)}
+  .nav .dot{width:5px;height:5px;border-radius:50%;background:var(--indigo)}
+
+  .header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .search{
+    display:flex;align-items:center;gap:7px;
+    background:var(--bg);border:1px solid var(--line);
+    padding:5px 9px;border-radius:7px;font-size:12.5px;color:var(--text-3);
+    min-width:200px;
+  }
+  .search kbd{
+    font-family:inherit;font-size:10.5px;color:var(--text-3);
+    border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;
+    padding:1px 5px;background:var(--white);margin-left:auto;
+  }
+  .icon-btn{
+    width:30px;height:30px;border-radius:7px;border:none;background:transparent;
+    display:grid;place-items:center;color:var(--text-2);cursor:pointer;
+    transition:background .15s;
+  }
+  .icon-btn:hover{background:var(--line-2);color:var(--ink)}
+  .avatar{
+    width:28px;height:28px;border-radius:50%;
+    background:linear-gradient(135deg,#EEF0FE,#D5DAFB);
+    color:var(--indigo);display:grid;place-items:center;
+    font-size:11.5px;font-weight:600;
+    border:1px solid var(--indigo-100);
+  }
+
+  /* ===== LAYOUT ===== */
+  .app{
+    display:grid;
+    grid-template-columns: minmax(248px,20%) minmax(0,55fr) minmax(340px,25%);
+    height:calc(100vh - 52px);
+    min-height:760px;
+  }
+  @media (max-width: 1440px){
+    .app{grid-template-columns: 260px 1fr 380px;}
+  }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar{
+    background:var(--white);
+    border-right:1px solid var(--line);
+    display:flex;flex-direction:column;
+    padding:14px 12px 12px;
+    overflow-y:auto;
+  }
+  .side-label{
+    font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;
+    color:var(--text-3);font-weight:600;
+    padding:6px 10px 8px;
+  }
+  .menu{display:flex;flex-direction:column;gap:2px}
+  .menu-item{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 10px;border-radius:8px;
+    font-size:13px;color:var(--text);font-weight:500;
+    cursor:pointer;transition:background .15s,color .15s;
+    border:1px solid transparent;
+    user-select:none;
+    position:relative;
+  }
+  .menu-item:hover{background:var(--line-2)}
+  .menu-item .mi-icon{
+    width:22px;height:22px;border-radius:6px;
+    display:grid;place-items:center;
+    background:var(--line-2);color:var(--text-2);
+    font-size:13px;
+    flex-shrink:0;
+    transition:all .15s;
+  }
+  .menu-item .mi-label{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .menu-item .mi-meta{font-size:11px;color:var(--text-3);font-variant-numeric:tabular-nums}
+  .menu-item.active{
+    background:var(--indigo-50);
+    color:var(--indigo-600);
+    font-weight:600;
+  }
+  .menu-item.active .mi-icon{
+    background:var(--indigo);color:#fff;
+    box-shadow:0 2px 6px -2px rgba(59,79,216,.5);
+  }
+  .menu-item.active::before{
+    content:"";position:absolute;left:-12px;top:8px;bottom:8px;
+    width:3px;border-radius:0 3px 3px 0;background:var(--indigo);
+  }
+  .menu-item .new-pill{
+    font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:999px;
+    background:#FFF1DB;color:#8A5A00;letter-spacing:.04em;
+  }
+
+  .side-divider{height:1px;background:var(--line);margin:14px 4px}
+
+  .side-footer{margin-top:auto;padding:4px}
+  .usage-card{
+    border:1px solid var(--line);border-radius:10px;
+    padding:12px 12px 11px;background:var(--white);
+  }
+  .usage-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .usage-title{font-size:12px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px}
+  .usage-title .spark{
+    width:14px;height:14px;border-radius:4px;
+    background:linear-gradient(135deg,#FFE4A6,#FFB85C);
+    display:grid;place-items:center;color:#7A4500;font-size:10px;
+  }
+  .usage-val{font-size:11.5px;color:var(--text-2);font-variant-numeric:tabular-nums}
+  .usage-val b{color:var(--ink);font-weight:600}
+  .bar{
+    height:6px;border-radius:999px;background:var(--line-2);overflow:hidden;
+    position:relative;
+  }
+  .bar > i{
+    display:block;height:100%;width:47%;
+    background:linear-gradient(90deg,var(--indigo),#6A7AE8);
+    border-radius:999px;
+    box-shadow:0 0 0 1px rgba(59,79,216,.15);
+  }
+  .usage-hint{font-size:10.5px;color:var(--text-3);margin-top:7px}
+
+  .upgrade{
+    margin-top:8px;
+    width:100%;display:flex;align-items:center;justify-content:center;gap:6px;
+    padding:8px 10px;border-radius:8px;border:1px solid var(--line);
+    background:var(--white);font-size:12px;font-weight:500;color:var(--text);
+    cursor:pointer;transition:all .15s;
+  }
+  .upgrade:hover{border-color:var(--indigo-100);background:var(--indigo-tint)}
+
+  /* ===== CHAT (CENTER) ===== */
+  .chat{
+    background:var(--bg);
+    display:flex;flex-direction:column;
+    overflow:hidden;
+    position:relative;
+  }
+  .chat-head{
+    background:var(--white);
+    border-bottom:1px solid var(--line);
+    padding:12px 24px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .ch-icon{
+    width:32px;height:32px;border-radius:9px;
+    background:linear-gradient(135deg,#EEF0FE,#D8DDFB);
+    color:var(--indigo);display:grid;place-items:center;
+    border:1px solid var(--indigo-100);
+  }
+  .ch-titles{flex:1;min-width:0}
+  .ch-title{font-size:14px;font-weight:600;color:var(--ink);line-height:1.3;display:flex;align-items:center;gap:8px}
+  .ch-sub{font-size:11.5px;color:var(--text-2);margin-top:1px;display:flex;align-items:center;gap:8px}
+  .ch-sub .sep{width:2px;height:2px;border-radius:50%;background:var(--text-3);display:inline-block}
+  .status-chip{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:11px;font-weight:500;color:var(--green);
+    padding:2px 7px;border-radius:999px;
+    background:#E9F8F0;border:1px solid #C8EBD7;
+  }
+  .status-chip .pulse{
+    width:5px;height:5px;border-radius:50%;background:var(--green);
+    box-shadow:0 0 0 0 rgba(27,182,106,.5);
+    animation:pulse 1.8s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(27,182,106,.5)}
+    70%{box-shadow:0 0 0 6px rgba(27,182,106,0)}
+    100%{box-shadow:0 0 0 0 rgba(27,182,106,0)}
+  }
+  .ch-tools{display:flex;gap:4px}
+
+  .messages{
+    flex:1;overflow-y:auto;
+    padding:24px 24px 16px;
+    scroll-behavior:smooth;
+  }
+  .msg-list{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+
+  .date-divider{
+    display:flex;align-items:center;gap:10px;
+    color:var(--text-3);font-size:11px;font-weight:500;
+    margin:4px 0 2px;
+  }
+  .date-divider::before,.date-divider::after{
+    content:"";flex:1;height:1px;background:var(--line);
+  }
+
+  .msg{display:flex;gap:12px}
+  .msg.enter{animation:slideUp .35s ease-out both}
+  .msg.user{flex-direction:row-reverse}
+  @keyframes slideUp{
+    from{opacity:0;transform:translateY(8px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  .msg-avatar{
+    width:30px;height:30px;border-radius:8px;
+    flex-shrink:0;display:grid;place-items:center;
+    font-size:11.5px;font-weight:600;
+  }
+  .msg.user .msg-avatar{
+    background:linear-gradient(135deg,#F3F4F8,#E4E7EF);
+    color:var(--ink-2);
+    border:1px solid var(--line);
+  }
+  .msg.ai .msg-avatar{
+    background:linear-gradient(135deg,var(--indigo) 0%,#6A7AE8 100%);
+    color:#fff;
+    box-shadow:0 4px 10px -3px rgba(59,79,216,.4);
+  }
+  .msg-body{max-width:min(560px,80%);display:flex;flex-direction:column;gap:6px}
+  .msg.user .msg-body{align-items:flex-end}
+
+  .msg-meta{
+    font-size:11px;color:var(--text-3);
+    display:flex;align-items:center;gap:6px;
+    padding:0 2px;
+  }
+  .msg-meta b{color:var(--text);font-weight:600}
+  .msg-meta .ai-badge{
+    display:inline-flex;align-items:center;gap:3px;
+    color:var(--indigo);font-weight:600;
+    background:var(--indigo-50);padding:1px 6px;border-radius:4px;
+    font-size:10px;letter-spacing:.04em;
+  }
+
+  .bubble{
+    padding:12px 14px;
+    border-radius:12px;
+    font-size:13.5px;line-height:1.75;
+    border:1px solid transparent;
+    word-wrap:break-word;
+  }
+  .msg.user .bubble{
+    background:var(--white);
+    border-color:var(--line);
+    color:var(--text);
+    border-bottom-right-radius:4px;
+    box-shadow:var(--shadow-sm);
+  }
+  .msg.ai .bubble{
+    background:var(--indigo-tint);
+    border-color:var(--indigo-100);
+    color:var(--text);
+    border-bottom-left-radius:4px;
+  }
+  .bubble p{margin:0}
+  .bubble p + p{margin-top:8px}
+  .bubble ol, .bubble ul{margin:8px 0 0;padding-left:0;list-style:none}
+  .bubble ol li{padding:3px 0;display:flex;gap:8px;align-items:flex-start}
+  .bubble ol li .num{
+    color:var(--indigo);font-weight:600;font-variant-numeric:tabular-nums;
+    flex-shrink:0;
+  }
+
+  .ai-result-card{
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;margin-top:10px;display:flex;align-items:center;gap:10px;
+  }
+  .ai-result-card .ok{
+    width:20px;height:20px;border-radius:50%;background:#E9F8F0;color:var(--green);
+    display:grid;place-items:center;font-size:12px;flex-shrink:0;
+  }
+  .ai-result-card .label{font-size:12.5px;color:var(--ink);font-weight:600}
+  .ai-result-card .sub{font-size:11px;color:var(--text-2);margin-top:1px}
+  .ai-result-card .time{
+    margin-left:auto;font-size:11px;color:var(--text-3);
+    font-variant-numeric:tabular-nums;
+    display:flex;align-items:center;gap:4px;
+  }
+  .ai-result-card .time .bolt{color:var(--amber)}
+
+  .msg-actions{
+    display:flex;gap:4px;margin-top:4px;opacity:0;transition:opacity .15s;
+    padding:0 2px;
+  }
+  .msg.ai:hover .msg-actions{opacity:1}
+  .msg-action{
+    border:none;background:transparent;color:var(--text-3);cursor:pointer;
+    padding:3px 6px;border-radius:5px;font-size:11px;
+    display:flex;align-items:center;gap:3px;
+    transition:all .15s;
+  }
+  .msg-action:hover{background:var(--line-2);color:var(--text)}
+
+  /* Composer */
+  .composer-wrap{
+    background:linear-gradient(180deg, rgba(250,251,252,0) 0%, var(--bg) 30%);
+    padding:8px 24px 16px;
+  }
+  .composer{
+    max-width:760px;margin:0 auto;
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:14px;
+    box-shadow:var(--shadow-md);
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .composer:focus-within{
+    border-color:var(--indigo);
+    box-shadow:0 0 0 4px rgba(59,79,216,.10), var(--shadow-md);
+  }
+  .composer textarea{
+    width:100%;border:none;outline:none;resize:none;
+    padding:14px 16px 4px;
+    font-family:inherit;font-size:13.5px;line-height:1.6;
+    background:transparent;color:var(--text);
+    min-height:24px;max-height:180px;
+  }
+  .composer textarea::placeholder{color:var(--text-3)}
+  .composer-bar{
+    display:flex;align-items:center;gap:6px;
+    padding:6px 8px 8px 10px;
+  }
+  .comp-chip{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:11.5px;color:var(--text-2);font-weight:500;
+    padding:4px 8px;border-radius:6px;
+    border:1px solid var(--line);background:var(--white);cursor:pointer;
+    transition:all .15s;
+  }
+  .comp-chip:hover{background:var(--line-2)}
+  .comp-chip.active{background:var(--indigo-50);color:var(--indigo);border-color:var(--indigo-100)}
+  .comp-spacer{flex:1}
+  .mic-btn{
+    width:32px;height:32px;border-radius:8px;border:1px solid var(--line);
+    background:var(--white);display:grid;place-items:center;cursor:pointer;
+    color:var(--text-2);transition:all .15s;position:relative;
+  }
+  .mic-btn:hover{background:var(--indigo-tint);color:var(--indigo);border-color:var(--indigo-100)}
+  .mic-btn.recording{background:#FEEAEA;border-color:#F5C2C2;color:#C53030}
+  .mic-btn.recording::after{
+    content:"";position:absolute;inset:-3px;border-radius:10px;
+    border:1px solid #F5C2C2;animation:ring 1.2s infinite;
+  }
+  @keyframes ring{
+    0%{transform:scale(1);opacity:.7}
+    100%{transform:scale(1.25);opacity:0}
+  }
+  .send-btn{
+    height:32px;padding:0 12px;border-radius:8px;border:none;
+    background:var(--indigo);color:#fff;font-weight:600;font-size:12.5px;
+    display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    box-shadow:0 4px 10px -3px rgba(59,79,216,.5), inset 0 1px 0 rgba(255,255,255,.2);
+    transition:all .15s;
+  }
+  .send-btn:hover{background:var(--indigo-600);transform:translateY(-1px)}
+  .send-btn:disabled{background:var(--line);color:var(--text-3);cursor:not-allowed;box-shadow:none;transform:none}
+  .send-btn .kbd{
+    font-family:inherit;font-size:10px;color:rgba(255,255,255,.7);
+    border:1px solid rgba(255,255,255,.3);padding:0 4px;border-radius:3px;
+    margin-left:2px;
+  }
+  .composer-hint{
+    text-align:center;font-size:10.5px;color:var(--text-3);
+    margin-top:8px;
+  }
+
+  /* Typing indicator */
+  .typing{display:inline-flex;gap:3px;align-items:center;padding:6px 0}
+  .typing span{
+    width:6px;height:6px;border-radius:50%;background:var(--indigo);
+    opacity:.4;animation:typing 1.2s infinite;
+  }
+  .typing span:nth-child(2){animation-delay:.15s}
+  .typing span:nth-child(3){animation-delay:.3s}
+  @keyframes typing{
+    0%,60%,100%{opacity:.3;transform:translateY(0)}
+    30%{opacity:1;transform:translateY(-3px)}
+  }
+
+  /* ===== RIGHT PANEL ===== */
+  .preview{
+    background:var(--white);
+    border-left:1px solid var(--line);
+    display:flex;flex-direction:column;
+    overflow:hidden;
+  }
+  .preview-head{
+    padding:12px 18px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:10px;
+  }
+  .preview-head .pv-title{font-size:13px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:7px}
+  .preview-head .pv-title .ok-dot{
+    width:6px;height:6px;border-radius:50%;background:var(--green);
+  }
+  .preview-head .pv-meta{font-size:11px;color:var(--text-3);margin-left:auto;display:flex;align-items:center;gap:6px}
+
+  .preview-tabs{
+    display:flex;gap:2px;padding:8px 12px 0;border-bottom:1px solid var(--line);
+    background:var(--white);
+  }
+  .pv-tab{
+    padding:7px 11px;font-size:12px;color:var(--text-2);font-weight:500;
+    border:none;background:transparent;cursor:pointer;
+    border-bottom:2px solid transparent;margin-bottom:-1px;
+    display:flex;align-items:center;gap:5px;
+  }
+  .pv-tab.active{color:var(--indigo);border-bottom-color:var(--indigo)}
+  .pv-tab .count{
+    font-size:10px;background:var(--line-2);color:var(--text-2);
+    padding:0 5px;border-radius:999px;font-weight:600;
+  }
+  .pv-tab.active .count{background:var(--indigo-50);color:var(--indigo)}
+
+  .preview-body{
+    flex:1;overflow-y:auto;padding:16px;
+    background:linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
+  }
+  .doc{
+    background:var(--white);border:1px solid var(--line);border-radius:10px;
+    box-shadow:var(--shadow-md);
+    padding:22px 22px 24px;
+    position:relative;
+    overflow:hidden;
+  }
+  .doc-shimmer{
+    position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(110deg, transparent 30%, rgba(59,79,216,.08) 50%, transparent 70%);
+    transform:translateX(-100%);
+    animation:shimmer 2.2s ease-in-out 1;
+  }
+  @keyframes shimmer{
+    0%{transform:translateX(-100%)}
+    100%{transform:translateX(100%)}
+  }
+
+  .doc-title{
+    font-size:15px;font-weight:700;color:var(--ink);
+    padding-bottom:10px;border-bottom:2px solid var(--ink);
+    margin-bottom:14px;
+    display:flex;align-items:center;gap:7px;
+    letter-spacing:.02em;
+  }
+  .doc-title .marker{
+    width:3px;height:14px;background:var(--indigo);display:inline-block;
+  }
+
+  .doc-meta{
+    display:grid;grid-template-columns:64px 1fr;gap:4px 12px;
+    font-size:12px;color:var(--text);margin-bottom:14px;
+  }
+  .doc-meta dt{color:var(--text-2);font-weight:500}
+  .doc-meta dd{margin:0;color:var(--ink);font-variant-numeric:tabular-nums}
+  .doc-meta dd b{font-weight:600}
+
+  .doc-section{margin-top:14px}
+  .doc-h{
+    font-size:12px;font-weight:700;color:var(--ink);
+    background:var(--indigo-50);color:var(--indigo-600);
+    display:inline-block;padding:2px 9px;border-radius:5px;
+    margin-bottom:8px;letter-spacing:.04em;
+  }
+  .doc-list{margin:0;padding:0;list-style:none;font-size:12.5px;line-height:1.85;color:var(--text)}
+  .doc-list.numbered li{padding-left:20px;position:relative}
+  .doc-list.numbered li::before{
+    content:counter(li);counter-increment:li;
+    position:absolute;left:0;top:0;
+    color:var(--indigo);font-weight:600;font-variant-numeric:tabular-nums;
+  }
+  .doc-list.numbered{counter-reset:li}
+  .doc-list.bullets li{padding-left:14px;position:relative}
+  .doc-list.bullets li::before{
+    content:"";position:absolute;left:2px;top:11px;
+    width:4px;height:4px;border-radius:50%;background:var(--indigo);
+  }
+  .doc-list .person{
+    background:var(--indigo-50);color:var(--indigo-600);
+    padding:0 5px;border-radius:3px;font-weight:600;font-size:11.5px;
+  }
+  .doc-list .date{
+    color:var(--ink);font-weight:600;
+  }
+
+  .doc-callout{
+    margin-top:12px;
+    background:var(--indigo-tint);border:1px solid var(--indigo-100);
+    border-radius:8px;padding:10px 12px;
+    display:flex;align-items:flex-start;gap:9px;
+    font-size:12px;color:var(--text);
+  }
+  .doc-callout .ico{
+    width:18px;height:18px;border-radius:5px;background:var(--indigo);color:#fff;
+    display:grid;place-items:center;font-size:10px;flex-shrink:0;margin-top:1px;
+  }
+  .doc-callout b{color:var(--ink);font-weight:600}
+
+  .doc-footer{
+    margin-top:18px;padding-top:10px;border-top:1px dashed var(--line);
+    font-size:10.5px;color:var(--text-3);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .doc-footer .gen-by{display:inline-flex;align-items:center;gap:5px}
+  .doc-footer .gen-by .ai-dot{
+    width:6px;height:6px;border-radius:50%;background:var(--indigo);
+  }
+
+  .preview-actions{
+    padding:12px 16px 14px;border-top:1px solid var(--line);
+    background:var(--white);
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .btn-row{display:flex;gap:8px}
+  .btn{
+    flex:1;height:34px;border-radius:8px;
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    font-size:12.5px;font-weight:600;cursor:pointer;
+    border:1px solid transparent;
+    transition:all .15s;
+  }
+  .btn-primary{
+    background:var(--indigo);color:#fff;
+    box-shadow:0 4px 10px -3px rgba(59,79,216,.5), inset 0 1px 0 rgba(255,255,255,.2);
+  }
+  .btn-primary:hover{background:var(--indigo-600);transform:translateY(-1px)}
+  .btn-secondary{
+    background:var(--white);color:var(--text);border-color:var(--line);
+  }
+  .btn-secondary:hover{background:var(--line-2);border-color:var(--text-3)}
+  .btn-link{
+    background:transparent;color:var(--indigo);border:none;font-weight:500;font-size:12px;
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;
+    padding:4px;
+  }
+  .btn-link:hover{text-decoration:underline}
+
+  /* Toast */
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;
+    padding:10px 16px;border-radius:8px;font-size:12.5px;font-weight:500;
+    display:flex;align-items:center;gap:8px;
+    opacity:0;transition:all .25s;pointer-events:none;z-index:99;
+    box-shadow:var(--shadow-lg);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast .tok{color:var(--indigo);}
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:transparent;border-radius:999px;border:3px solid transparent;background-clip:padding-box}
+  *:hover::-webkit-scrollbar-thumb{background:rgba(15,17,21,.15);background-clip:padding-box;border:3px solid transparent}
+  ::-webkit-scrollbar-track{background:transparent}
+
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header class="app-header">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <path d="M3 11.5L8 3l5 8.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="8" cy="11.5" r="1.4" fill="#fff"/>
+      </svg>
+    </div>
+    <span class="brand-name">AI Concierge</span>
+  </div>
+  <div class="brand-sep"></div>
+  <div class="brand-feature">
+    <span class="cur">社内業務アシスタント</span>
+    <span class="chev">›</span>
+    <span>議事録作成</span>
+  </div>
+
+  <nav class="nav">
+    <a href="#"><span style="opacity:.7">⌂</span> ダッシュボード</a>
+    <a href="#">問い合わせ対応</a>
+    <a href="#" class="active"><span class="dot"></span> 社内業務</a>
+    <a href="#">設定</a>
+  </nav>
+
+  <div class="header-right">
+    <div class="search">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.4"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <span>機能・履歴を検索</span>
+      <kbd>⌘ K</kbd>
+    </div>
+    <button class="icon-btn" title="通知">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3.5 12V7a4.5 4.5 0 119 0v5l1 1.5H2.5L3.5 12z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M6.5 14a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.3"/></svg>
+    </button>
+    <button class="icon-btn" title="ヘルプ">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M6.5 6.2a1.5 1.5 0 113 0c0 1-1.5 1.3-1.5 2.3M8 11h.01" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    </button>
+    <div class="avatar">YT</div>
+  </div>
+</header>
+
+<!-- ============ APP ============ -->
+<div class="app">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="side-label">業務メニュー</div>
+    <div class="menu" id="menu">
+      <div class="menu-item active" data-id="minutes">
+        <span class="mi-icon">📝</span>
+        <span class="mi-label">議事録作成</span>
+        <span class="mi-meta">12</span>
+      </div>
+      <div class="menu-item" data-id="proposal">
+        <span class="mi-icon">📄</span>
+        <span class="mi-label">提案文・企画書生成</span>
+        <span class="mi-meta">8</span>
+      </div>
+      <div class="menu-item" data-id="faq">
+        <span class="mi-icon">❓</span>
+        <span class="mi-label">社内FAQ</span>
+        <span class="mi-meta">23</span>
+      </div>
+      <div class="menu-item" data-id="translate">
+        <span class="mi-icon">🌐</span>
+        <span class="mi-label">翻訳・多言語対応</span>
+        <span class="mi-meta">3</span>
+      </div>
+      <div class="menu-item" data-id="rewrite">
+        <span class="mi-icon">✅</span>
+        <span class="mi-label">文章校正・リライト</span>
+      </div>
+      <div class="menu-item" data-id="report">
+        <span class="mi-icon">📊</span>
+        <span class="mi-label">レポート自動作成</span>
+        <span class="new-pill">NEW</span>
+      </div>
+    </div>
+
+    <div class="side-divider"></div>
+    <div class="side-label">最近の履歴</div>
+    <div class="menu">
+      <div class="menu-item" style="font-weight:500;color:var(--text-2)">
+        <span class="mi-icon" style="background:transparent;font-size:11px">·</span>
+        <span class="mi-label">5/27 開発定例議事録</span>
+      </div>
+      <div class="menu-item" style="font-weight:500;color:var(--text-2)">
+        <span class="mi-icon" style="background:transparent;font-size:11px">·</span>
+        <span class="mi-label">5/26 提案書ドラフト</span>
+      </div>
+      <div class="menu-item" style="font-weight:500;color:var(--text-2)">
+        <span class="mi-icon" style="background:transparent;font-size:11px">·</span>
+        <span class="mi-label">5/25 翻訳：英文契約書</span>
+      </div>
+    </div>
+
+    <div class="side-footer">
+      <div class="usage-card">
+        <div class="usage-row">
+          <div class="usage-title"><span class="spark">⚡</span>今月の利用回数</div>
+        </div>
+        <div class="bar"><i></i></div>
+        <div style="display:flex;justify-content:space-between;margin-top:7px">
+          <span class="usage-val"><b>47</b> 回</span>
+          <span class="usage-val">/ 100 回</span>
+        </div>
+        <div class="usage-hint">リセットまで残り 4 日</div>
+      </div>
+      <button class="upgrade">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.8 4.2L14 7l-3 2.9.7 4.1L8 12l-3.7 2 .7-4.1L2 7l4.2-.8L8 2z" fill="#E1A100" stroke="#E1A100" stroke-width="1" stroke-linejoin="round"/></svg>
+        プランをアップグレード
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== CHAT ===== -->
+  <main class="chat">
+    <div class="chat-head">
+      <div class="ch-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3h10v8H5l-2 2V3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M5.5 7h5M5.5 9h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </div>
+      <div class="ch-titles">
+        <div class="ch-title">議事録作成 <span class="status-chip"><span class="pulse"></span> オンライン</span></div>
+        <div class="ch-sub">
+          <span>会議内容を話すだけで、整った議事録を自動生成します</span>
+          <span class="sep"></span>
+          <span>モデル: Concierge-JP v2.4</span>
+        </div>
+      </div>
+      <div class="ch-tools">
+        <button class="icon-btn" title="新規会話"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+        <button class="icon-btn" title="履歴"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
+        <button class="icon-btn" title="その他"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="3.5" cy="8" r="1.1" fill="currentColor"/><circle cx="8" cy="8" r="1.1" fill="currentColor"/><circle cx="12.5" cy="8" r="1.1" fill="currentColor"/></svg></button>
+      </div>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="msg-list">
+
+        <div class="date-divider"><span>2026年 5月 28日（木）</span></div>
+
+        <!-- USER 1 -->
+        <div class="msg user">
+          <div class="msg-avatar">YT</div>
+          <div class="msg-body">
+            <div class="msg-meta"><b>あなた</b><span>10:46</span></div>
+            <div class="bubble">
+              <p>今日の10時からの営業会議の議事録を作りたい。参加者は田中部長、鈴木、佐藤、私の4名。</p>
+              <p>主な議題は来期の新規開拓戦略と、既存顧客フォロー体制の見直し。会議は45分で終わりました。</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI 1 -->
+        <div class="msg ai">
+          <div class="msg-avatar">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2.5l1.5 3.5 3.5 1-2.5 2.5.5 3.5L8 11.5l-3 1.5.5-3.5L3 7l3.5-1L8 2.5z" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="msg-body">
+            <div class="msg-meta"><b>AI Concierge</b><span class="ai-badge">AI</span><span>10:46</span></div>
+            <div class="bubble">
+              <p>承知しました。議事録のフォーマットを作成します。</p>
+              <p>追加で教えていただけますか？</p>
+              <ol>
+                <li><span class="num">①</span><span>決定事項は何かありましたか？</span></li>
+                <li><span class="num">②</span><span>次回アクションや担当者の割り振りはありましたか？</span></li>
+              </ol>
+            </div>
+            <div class="msg-actions">
+              <button class="msg-action">📋 コピー</button>
+              <button class="msg-action">↻ 再生成</button>
+              <button class="msg-action">👍</button>
+              <button class="msg-action">👎</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- USER 2 -->
+        <div class="msg user">
+          <div class="msg-avatar">YT</div>
+          <div class="msg-body">
+            <div class="msg-meta"><b>あなた</b><span>10:48</span></div>
+            <div class="bubble">
+              <p>新規開拓は鈴木さんが来月末までにターゲットリスト100社作成。既存フォローは月次訪問を佐藤さんが担当することになりました。</p>
+              <p>次回会議は2週間後の同じ時間で。</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI 2 -->
+        <div class="msg ai">
+          <div class="msg-avatar">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2.5l1.5 3.5 3.5 1-2.5 2.5.5 3.5L8 11.5l-3 1.5.5-3.5L3 7l3.5-1L8 2.5z" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="msg-body">
+            <div class="msg-meta"><b>AI Concierge</b><span class="ai-badge">AI</span><span>10:49</span></div>
+            <div class="bubble">
+              <p><span style="color:var(--green);font-weight:600">✓</span> 議事録を作成しました。右側プレビューをご確認ください。</p>
+              <p style="color:var(--text-2);font-size:12.5px">Word・PDF形式でダウンロード、またはメールで共有できます。</p>
+              <div class="ai-result-card">
+                <span class="ok">✓</span>
+                <div>
+                  <div class="label">営業会議 議事録.docx</div>
+                  <div class="sub">638 words ・ 1 page ・ DOCX / PDF / Markdown</div>
+                </div>
+                <div class="time"><span class="bolt">⚡</span><b style="color:var(--ink);font-weight:600">2.1秒</b>で生成</div>
+              </div>
+            </div>
+            <div class="msg-actions">
+              <button class="msg-action">📋 コピー</button>
+              <button class="msg-action">↻ 再生成</button>
+              <button class="msg-action">👍</button>
+              <button class="msg-action">👎</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <form class="composer" id="composer" onsubmit="return false;">
+        <textarea id="input" rows="1" placeholder="議事録の追記や、別の業務をお願いできます。例：「3行で要約して」"></textarea>
+        <div class="composer-bar">
+          <button type="button" class="comp-chip active" title="モード">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M3 3h10v8H5l-2 2V3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+            議事録モード
+          </button>
+          <button type="button" class="comp-chip" title="添付">＋ 添付</button>
+          <button type="button" class="comp-chip" title="テンプレ">⌗ テンプレ</button>
+          <div class="comp-spacer"></div>
+          <button type="button" class="mic-btn" id="mic" title="音声入力 (⌘+M)">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="6" y="2" width="4" height="8" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M4 8a4 4 0 008 0M8 12v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </button>
+          <button type="submit" class="send-btn" id="send" disabled>
+            送信
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="kbd">↵</span>
+          </button>
+        </div>
+      </form>
+      <div class="composer-hint">AIは間違えることがあります。重要な情報はご確認ください。</div>
+    </div>
+  </main>
+
+  <!-- ===== PREVIEW ===== -->
+  <aside class="preview">
+    <div class="preview-head">
+      <div class="pv-title"><span class="ok-dot"></span>生成された議事録</div>
+      <div class="pv-meta">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        たった今
+      </div>
+    </div>
+
+    <div class="preview-tabs">
+      <button class="pv-tab active">プレビュー</button>
+      <button class="pv-tab">アウトライン <span class="count">5</span></button>
+      <button class="pv-tab">変更履歴 <span class="count">3</span></button>
+    </div>
+
+    <div class="preview-body">
+      <article class="doc" id="doc">
+        <div class="doc-shimmer" id="shimmer"></div>
+
+        <h1 class="doc-title"><span class="marker"></span>営業会議 議事録</h1>
+
+        <dl class="doc-meta">
+          <dt>日時</dt><dd><b>2026年5月28日（木）</b> 10:00〜10:45</dd>
+          <dt>場所</dt><dd>第一会議室</dd>
+          <dt>参加者</dt><dd>田中部長、鈴木、佐藤、<span style="color:var(--indigo-600);font-weight:600">[作成者]</span></dd>
+          <dt>記録</dt><dd style="color:var(--text-2)">AI Concierge による自動作成</dd>
+        </dl>
+
+        <div class="doc-section">
+          <div class="doc-h">議題</div>
+          <ol class="doc-list numbered">
+            <li>来期 新規開拓戦略</li>
+            <li>既存顧客フォロー体制の見直し</li>
+          </ol>
+        </div>
+
+        <div class="doc-section">
+          <div class="doc-h">決定事項</div>
+          <ul class="doc-list bullets">
+            <li><b>新規開拓：</b><span class="person">鈴木</span> 担当にて <span class="date">6月末</span>までに、ターゲットリスト <b>100社</b> を作成</li>
+            <li><b>既存顧客フォロー：</b><span class="person">佐藤</span> 担当にて、<b>月次訪問</b>体制を構築</li>
+          </ul>
+        </div>
+
+        <div class="doc-section">
+          <div class="doc-h">次回会議</div>
+          <ul class="doc-list bullets">
+            <li>日時：<span class="date">2026年6月11日（木）10:00〜</span></li>
+            <li>場所：第一会議室（予定）</li>
+          </ul>
+        </div>
+
+        <div class="doc-callout">
+          <span class="ico">i</span>
+          <div>
+            <b>AIによる提案</b>：本議事録は会議参加者全員に共有することを推奨します。リマインダーを <b>6月10日 18:00</b> に設定しますか？
+          </div>
+        </div>
+
+        <div class="doc-footer">
+          <span class="gen-by"><span class="ai-dot"></span>Generated by AI Concierge ・ Concierge-JP v2.4</span>
+          <span>v1.0 ・ 2.1s</span>
+        </div>
+      </article>
+    </div>
+
+    <div class="preview-actions">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="showToast('Word形式でダウンロードしました')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M5.5 8.5l1 3 1-2 1 2 1-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Wordでダウンロード
+        </button>
+        <button class="btn btn-secondary" onclick="showToast('PDFで保存しました')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M5.5 9h1.5a1 1 0 100-2H5.5v4M9 7v4h1.5a1 1 0 001-1V8a1 1 0 00-1-1H9z" stroke="currentColor" stroke-width="1.2"/></svg>
+          PDFで保存
+        </button>
+      </div>
+      <button class="btn-link" onclick="showToast('共有リンクをコピーしました')">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12v8H2V4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M2 5l6 4 6-4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        メールで共有
+      </button>
+    </div>
+  </aside>
+
+</div>
+
+<div class="toast" id="toast"><span class="tok">✓</span><span id="toastMsg">完了しました</span></div>
+
+<script>
+  // ===== Menu switching =====
+  const menu = document.getElementById('menu');
+  const featureLabel = document.querySelector('.brand-feature .cur');
+  const featureSub = document.querySelector('.brand-feature span:last-child');
+  const headTitle = document.querySelector('.ch-title');
+  const headSubText = document.querySelector('.ch-sub span:first-child');
+  const inputEl = document.getElementById('input');
+
+  const MENU_META = {
+    minutes:   {label:'議事録作成',           desc:'会議内容を話すだけで、整った議事録を自動生成します', ph:'議事録の追記や、別の業務をお願いできます。例：「3行で要約して」'},
+    proposal:  {label:'提案文・企画書生成',   desc:'要件を伝えるだけで、構成の整った提案書を生成します', ph:'例：SaaSの新機能リリースに伴う提案書を作って'},
+    faq:       {label:'社内FAQ',              desc:'社内ドキュメントから即座に答えを返します',           ph:'例：稟議の承認フローを教えて'},
+    translate: {label:'翻訳・多言語対応',     desc:'ビジネス文書を自然な多言語に翻訳します',             ph:'例：この英文契約書を日本語に翻訳して'},
+    rewrite:   {label:'文章校正・リライト',   desc:'読みやすさ・敬語・冗長表現を一括チェック',           ph:'例：この提案書をビジネス調にリライトして'},
+    report:    {label:'レポート自動作成',     desc:'数値データから報告書を自動で組み立てます',           ph:'例：5月の売上データから月次レポートを作って'},
+  };
+
+  menu.addEventListener('click', (e) => {
+    const item = e.target.closest('.menu-item');
+    if (!item || !item.dataset.id) return;
+    menu.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+    item.classList.add('active');
+    const m = MENU_META[item.dataset.id];
+    if (m){
+      // update header breadcrumb tail
+      featureSub.textContent = m.label;
+      headTitle.firstChild.nodeValue = m.label + ' ';
+      headSubText.textContent = m.desc;
+      inputEl.placeholder = m.ph;
+      // bump the chip text
+      const chip = document.querySelector('.comp-chip.active');
+      if (chip) chip.lastChild.nodeValue = ' ' + m.label.replace('作成','').replace('生成','').replace('対応','').replace('・リライト','') + 'モード';
+    }
+  });
+
+  // ===== Composer =====
+  const send = document.getElementById('send');
+  const composer = document.getElementById('composer');
+  const mic = document.getElementById('mic');
+
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 180) + 'px';
+    send.disabled = inputEl.value.trim().length === 0;
+  });
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      if (!send.disabled) submitMsg();
+    }
+  });
+  composer.addEventListener('submit', submitMsg);
+  send.addEventListener('click', submitMsg);
+
+  const msgList = document.querySelector('.msg-list');
+  const messagesEl = document.getElementById('messages');
+
+  function submitMsg(){
+    const text = inputEl.value.trim();
+    if (!text) return;
+    // append user message
+    const userEl = document.createElement('div');
+    userEl.className = 'msg user enter';
+    userEl.innerHTML = `
+      <div class="msg-avatar">YT</div>
+      <div class="msg-body">
+        <div class="msg-meta"><b>あなた</b><span>${nowHM()}</span></div>
+        <div class="bubble"><p>${escapeHTML(text)}</p></div>
+      </div>`;
+    msgList.appendChild(userEl);
+
+    // typing
+    const typingEl = document.createElement('div');
+    typingEl.className = 'msg ai enter';
+    typingEl.innerHTML = `
+      <div class="msg-avatar">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2.5l1.5 3.5 3.5 1-2.5 2.5.5 3.5L8 11.5l-3 1.5.5-3.5L3 7l3.5-1L8 2.5z" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="msg-body">
+        <div class="msg-meta"><b>AI Concierge</b><span class="ai-badge">AI</span><span>生成中…</span></div>
+        <div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>
+      </div>`;
+    msgList.appendChild(typingEl);
+    inputEl.value = ''; send.disabled = true; inputEl.style.height = 'auto';
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    // trigger shimmer on doc
+    const shimmer = document.getElementById('shimmer');
+    shimmer.style.animation = 'none'; void shimmer.offsetWidth;
+    shimmer.style.animation = 'shimmer 1.8s ease-in-out 1';
+
+    // fake response
+    setTimeout(() => {
+      typingEl.querySelector('.bubble').innerHTML = `
+        <p>承知しました。ご指示の内容を反映して議事録を更新しました。</p>
+        <p style="color:var(--text-2);font-size:12.5px">右側プレビューで差分をご確認ください。</p>`;
+      typingEl.querySelector('.msg-meta span:last-child').textContent = nowHM();
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }, 1400);
+  }
+
+  function nowHM(){
+    const d = new Date();
+    return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+  function escapeHTML(s){return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+  // ===== Mic =====
+  mic.addEventListener('click', () => {
+    mic.classList.toggle('recording');
+    if (mic.classList.contains('recording')){
+      showToast('音声入力を開始しました');
+    } else {
+      showToast('音声入力を停止しました');
+    }
+  });
+
+  // ===== Toast =====
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toastMsg');
+  let toastTimer;
+  function showToast(msg){
+    toastMsg.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>toast.classList.remove('show'), 1800);
+  }
+
+  // ===== Preview tabs =====
+  document.querySelectorAll('.pv-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.pv-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+    });
+  });
+
+  // scroll messages to bottom on load
+  window.addEventListener('load', () => {
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  });
+</script>
+</body>
+</html>
